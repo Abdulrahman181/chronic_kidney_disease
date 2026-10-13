@@ -1,27 +1,48 @@
 # Chronic Kidney Disease
 
-This repository contains a reproducible machine-learning notebook for **Chronic Kidney Disease**.
+This repository contains a reproducible **educational** machine-learning baseline for Chronic Kidney Disease classification. The notebook is intentionally data-free: no patient records or fabricated metrics are committed.
 
-## Data
+## Data contract
 
-The dataset is intentionally not committed because of size/licensing constraints. Required input: `kidney_disease.csv` and optional `data_description.txt`.
+The notebook expects `kidney_disease.csv` in a local data directory. The commonly distributed UCI file may use abbreviated headers (`bp`, `sg`, `class`, etc.); the notebook maps those names to canonical feature names. It accepts the following target labels after trimming: `ckd` and `notckd` (the target is encoded as 1 and 0 respectively).
 
-Set the environment variable `CKD_DATA_DIR` to the local dataset path before running the notebook. The notebook defaults to a `data/` path for local execution.
+The dataset is not present in this repository because it is not part of the supplied checkout and may have distribution/licensing constraints. If the file is absent, the notebook stops with an actionable `FileNotFoundError` rather than inventing data or results.
 
-## Run
+Set the path explicitly:
+
+```bash
+export CKD_DATA_DIR=/absolute/path/to/data
+# /absolute/path/to/data/kidney_disease.csv must exist
+```
+
+The optional `data_description.txt` is not required at runtime because the raw-column mapping is defined in the notebook.
+
+## Setup and run
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 export CKD_DATA_DIR=/absolute/path/to/data
-jupyter notebook
+jupyter lab Chronical_kidney_disease.ipynb
 ```
 
-Run cells from top to bottom. Generated models and caches should remain local and are excluded from version control.
+Run cells from top to bottom. A fitted pipeline is written only when the training cells are run, to `artifacts/kidney_model.joblib` by default. Override it with `CKD_MODEL_PATH` if needed. The artifact is ignored by Git.
 
-## Limitations and cautions
+## Engineering safeguards
 
-- Reported metrics depend on the dataset split, random seed, preprocessing, and library versions.
-- These notebooks are educational/research artifacts, not production or medical decision systems.
-- Validate data schema and class balance before training; do not interpret predictions as professional advice.
+- The test set is created with a fixed seed and stratification before fitting anything.
+- Numeric imputation and categorical one-hot encoding are inside a `ColumnTransformer`/`Pipeline`, so hold-out rows do not influence preprocessing.
+- Cross-validation runs only on the training partition; the hold-out metrics include ROC AUC, balanced accuracy, F1, precision, recall, and accuracy.
+- The notebook contains no fabricated inference row and no checked-in model or metric output.
+- `validate_notebook.py` performs dependency-free AST/static checks and rejects stale outputs, hard-coded absolute paths, and the former pre-split feature-selection/random-imputation patterns.
+
+Run the static check from the repository root:
+
+```bash
+python validate_notebook.py
+```
+
+## Limitations
+
+Metrics depend on the supplied data, class balance, split seed, and package versions. The project has not been fully trained in this checkout because the dataset is unavailable; therefore this review makes no claim about model quality. This notebook is not a medical device and must not be used for diagnosis or treatment decisions.
