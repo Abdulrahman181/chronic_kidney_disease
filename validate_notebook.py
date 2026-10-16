@@ -14,6 +14,9 @@ def main() -> int:
     if notebook.get("nbformat") != 4:
         raise AssertionError("Notebook must use nbformat 4")
 
+    if notebook.get("nbformat_minor", 0) < 5:
+        raise AssertionError("Notebook must use a current nbformat 4 minor version")
+
     code_sources: list[str] = []
     for index, cell in enumerate(notebook.get("cells", [])):
         if cell.get("cell_type") == "code":
@@ -24,6 +27,10 @@ def main() -> int:
                 raise AssertionError(f"Cell {index} contains stale outputs")
             if cell.get("execution_count") is not None:
                 raise AssertionError(f"Cell {index} has a stale execution count")
+        elif cell.get("cell_type") == "markdown":
+            markdown = "".join(cell.get("source", []))
+            if any(line.strip().startswith('"') for line in markdown.splitlines()):
+                raise AssertionError(f"Cell {index} contains malformed quoted markdown")
 
     source = "\n".join(code_sources)
     required_tokens = {
@@ -39,6 +46,11 @@ def main() -> int:
         "roc_auc",
         "balanced_accuracy",
         "predict_proba",
+        "FEATURE_COLUMNS",
+        "duplicate columns after alias mapping",
+        "Unsupported or missing target labels",
+        "load_model_artifact",
+        "artifact_version",
     }
     missing = sorted(token for token in required_tokens if token not in source)
     if missing:
